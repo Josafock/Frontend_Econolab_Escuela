@@ -22,6 +22,7 @@ import {
 } from "@/helpers/date";
 import { useOffline } from "@/lib/offline/network-state";
 import { enqueueSyncItem } from "@/lib/offline/sync-queue";
+import { getNotificationSession, notifyResultFinalized } from "@/lib/pwa/notifications";
 import toast from "react-hot-toast";
 
 type ServiceResultEditorProps = {
@@ -177,6 +178,7 @@ export default function ServiceResultEditor({
 
   const saveResult = async (mode: "draft" | "final") => {
     setSavingMode(mode);
+    const notificationSession = getNotificationSession();
 
     const payload: UpdateStudyResultPayload = {
       serviceOrderId: serviceId,
@@ -233,6 +235,9 @@ export default function ServiceResultEditor({
 
     setResult(response.data.data);
     onSaved(response.data.data);
+    if (mode === "final" && !response.data.data.isDraft) {
+      void notifyResultFinalized(serviceId, notificationSession);
+    }
     toast.success(
       mode === "final" ? "Resultado cerrado con éxito." : "Borrador guardado.",
     );

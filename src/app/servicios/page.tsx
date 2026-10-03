@@ -1,10 +1,11 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Activity,
   BadgeCheck,
+  Camera,
   Clock3,
   Eye,
   Filter,
@@ -45,6 +46,11 @@ import {
 
 const AddServiceModal = dynamic(
   () => import("@/components/servicios/AgregarServicioModal"),
+);
+
+const ServiceBarcodeScanner = dynamic(
+  () => import("@/components/servicios/ServiceBarcodeScanner"),
+  { ssr: false },
 );
 
 const statusOptions: Array<{
@@ -106,6 +112,8 @@ export default function ServiciosPage() {
     direction: "desc",
   });
   const [openServiceModal, setOpenServiceModal] = useState(false);
+  const [openScanner, setOpenScanner] = useState(false);
+  const closeScanner = useCallback(() => setOpenScanner(false), []);
   const [resultsPdfTarget, setResultsPdfTarget] = useState<{
     id: number;
     label: string;
@@ -386,13 +394,24 @@ export default function ServiciosPage() {
           </p>
         </div>
 
-        <button
-          className="app-action-button inline-flex items-center justify-center gap-2 rounded-2xl bg-red-600 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-red-600/20 transition-all hover:bg-red-700"
-          onClick={() => setOpenServiceModal(true)}
-        >
-          <Plus size={20} />
-          Nuevo servicio
-        </button>
+        <div className="flex flex-col gap-3 sm:flex-row">
+          <button
+            type="button"
+            className="app-action-button inline-flex items-center justify-center gap-2 rounded-2xl border border-gray-300 bg-white px-5 py-3 text-sm font-semibold text-gray-700 transition-all hover:bg-gray-50"
+            onClick={() => setOpenScanner(true)}
+          >
+            <Camera size={20} />
+            Escanear recibo
+          </button>
+          <button
+            type="button"
+            className="app-action-button inline-flex items-center justify-center gap-2 rounded-2xl bg-red-600 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-red-600/20 transition-all hover:bg-red-700"
+            onClick={() => setOpenServiceModal(true)}
+          >
+            <Plus size={20} />
+            Nuevo servicio
+          </button>
+        </div>
       </div>
 
       <ConnectionStatusBanner
@@ -869,6 +888,10 @@ export default function ServiciosPage() {
           </div>
         </>
       )}
+
+      {openScanner ? (
+        <ServiceBarcodeScanner onClose={closeScanner} />
+      ) : null}
 
       {openServiceModal ? (
         <AddServiceModal

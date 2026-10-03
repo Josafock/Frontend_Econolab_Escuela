@@ -5,13 +5,15 @@ import type { ReactNode } from "react";
 
 type AppModalProps = {
   children: ReactNode;
+  zIndex?: number;
 };
 
-export default function AppModal({ children }: AppModalProps) {
+export default function AppModal({ children, zIndex = 50 }: AppModalProps) {
   return (
     <AnimatePresence>
       <motion.div
-        className="fixed inset-0 z-50 overflow-hidden overscroll-contain px-2 pb-[calc(env(safe-area-inset-bottom)+0.5rem)] pt-[calc(env(safe-area-inset-top)+0.5rem)] sm:p-4"
+        className="fixed inset-0 overflow-hidden overscroll-contain px-2 pb-[calc(env(safe-area-inset-bottom)+0.5rem)] pt-[calc(env(safe-area-inset-top)+0.5rem)] sm:p-4"
+        style={{ zIndex }}
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}

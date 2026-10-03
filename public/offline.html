@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#dc2626">
+    <meta name="robots" content="noindex">
+    <title>Guía sin conexión | Econolab</title>
+    <link rel="icon" href="/icons/icon-192.png" type="image/png">
+    <link rel="stylesheet" href="/offline.css">
+    <script src="/offline.js" defer></script>
+  </head>
+  <body>
+    <a class="skip-link" href="#contenido">Saltar al contenido</a>
+    <header class="brand">
+      <img src="/econolab-brand.png" alt="Econolab" width="200" height="60">
+      <span>Guía de trabajo</span>
+    </header>
+    <main id="contenido">
+      <section class="hero" aria-labelledby="page-title">
+        <p class="eyebrow">Disponible sin conexión</p>
+        <h1 id="page-title">Tu guía del laboratorio, siempre a mano.</h1>
+        <p>Consulta los pasos de trabajo aunque no haya internet. Esta página contiene ayuda estática; las consultas al servidor y la búsqueda de servicios necesitan conexión.</p>
+        <p id="connection-status" class="status" role="status" aria-live="polite">Si el sistema no responde, conserva esta guía y reintenta cuando tengas conexión.</p>
+        <a class="button" id="retry-link" href="/home">Reintentar abrir Econolab</a>
+        <p class="hint">Volverás al inicio del sistema. Si tu sesión terminó, inicia sesión de nuevo.</p>
+      </section>
+
+      <nav class="guide-nav" aria-label="Secciones de la guía">
+        <a href="#servicios">Registrar un servicio</a>
+        <a href="#resultados">Capturar resultados</a>
+        <a href="#camara">Leer un recibo</a>
+        <a href="#instalacion">Instalar la aplicación</a>
+      </nav>
+
+      <div class="guides">
+        <section id="servicios" class="card" aria-labelledby="services-title">
+          <p class="step">01 / Recepción</p>
+          <h2 id="services-title">Registrar un servicio</h2>
+          <ol>
+            <li>Al recuperar la conexión, abre <strong>Servicios</strong> y elige agregar un servicio.</li>
+            <li>Selecciona al paciente y revisa su identificación. Completa el médico y el contexto solicitado.</li>
+            <li>Agrega los estudios o paquetes. Verifica cantidades, precios y el total antes de continuar.</li>
+            <li>Completa la logística y revisa el resumen. Guarda y espera la confirmación del sistema.</li>
+            <li>Comprueba el folio y genera el recibo desde las acciones del servicio.</li>
+          </ol>
+          <p class="note">Si una operación quedó pendiente antes de perder la conexión, revisa su estado al volver para evitar duplicarla.</p>
+        </section>
+
+        <section id="resultados" class="card" aria-labelledby="results-title">
+          <p class="step">02 / Laboratorio</p>
+          <h2 id="results-title">Capturar resultados</h2>
+          <ol>
+            <li>Busca el servicio por su folio, paciente o estudio en <strong>Servicios</strong>.</li>
+            <li>Abre <strong>Capturar resultados</strong> y confirma que se trate del paciente y estudio correctos.</li>
+            <li>Completa los valores, unidades, fechas y observaciones que correspondan al registro.</li>
+            <li>Revisa la captura y guarda. Comprueba la confirmación o el estado pendiente antes de cerrar.</li>
+            <li>Cuando la información esté lista, utiliza la opción de resultados PDF del servicio.</li>
+          </ol>
+          <p class="note">Esta guía explica el uso del sistema. La interpretación de resultados corresponde al personal autorizado.</p>
+        </section>
+
+        <section id="camara" class="card" aria-labelledby="camera-title">
+          <p class="step">03 / Consulta rápida</p>
+          <h2 id="camera-title">Leer el código de un recibo</h2>
+          <p>La cámara facilita localizar un servicio desde su recibo y reduce errores al escribir el folio.</p>
+          <ol>
+            <li>Con conexión, abre el lector de recibos desde <strong>Servicios</strong>.</li>
+            <li>Permite el acceso a la cámara cuando lo solicite el navegador.</li>
+            <li>Coloca el código del recibo dentro del encuadre, con buena luz y sin reflejos.</li>
+            <li>Revisa el servicio encontrado antes de continuar. Si la cámara no está disponible, escribe el folio en el buscador.</li>
+          </ol>
+          <p class="note">Buscar el servicio requiere conexión y una sesión autorizada. Puedes cambiar el permiso de cámara desde los ajustes del navegador.</p>
+        </section>
+
+        <section id="instalacion" class="card" aria-labelledby="install-title">
+          <p class="step">04 / Acceso directo</p>
+          <h2 id="install-title">Instalar Econolab</h2>
+          <ul>
+            <li><strong>Computadora:</strong> abre Econolab en Chrome o Edge y utiliza la opción de instalar de la barra de direcciones o del menú del navegador.</li>
+            <li><strong>Android:</strong> abre el menú de Chrome y elige instalar la aplicación o agregar a la pantalla de inicio.</li>
+            <li><strong>iPhone o iPad:</strong> abre Econolab en Safari, pulsa Compartir y selecciona agregar a la pantalla de inicio.</li>
+          </ul>
+          <p>Abre la aplicación al menos una vez con internet para preparar esta guía y sus recursos estáticos.</p>
+          <p class="note">La instalación y los permisos necesitan una conexión segura (HTTPS). Las opciones disponibles dependen del navegador.</p>
+        </section>
+      </div>
+
+      <section class="scope" aria-labelledby="scope-title">
+        <h2 id="scope-title">Qué está disponible en esta guía</h2>
+        <p>Estos textos, el diseño, el logotipo y los iconos se guardan en la caché estática de la aplicación. Este mecanismo no guarda páginas privadas, respuestas de la API ni documentos PDF.</p>
+        <p>Si el servidor no responde aunque tengas internet, espera un momento y reintenta. La guía permanece abierta hasta que decidas volver al sistema.</p>
+        <noscript><p>Puedes leer toda la guía sin JavaScript. Utiliza el botón de reintentar para abrir el sistema.</p></noscript>
+      </section>
+    </main>
+    <footer>Econolab · Guía operativa sin conexión <a href="#contenido">Volver arriba</a></footer>
+  </body>
+</html>

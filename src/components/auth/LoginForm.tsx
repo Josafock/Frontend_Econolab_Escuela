@@ -8,6 +8,7 @@ import { Eye, EyeOff, User, Lock } from 'lucide-react';
 import { FcGoogle } from 'react-icons/fc';
 import { login } from '@/actions/auth/loginAction';
 import Link from 'next/link';
+import PwaControls from '@/components/pwa/PwaControls';
 
 export default function LoginForm() {
   const router = useRouter();
@@ -80,6 +81,7 @@ export default function LoginForm() {
               </div>
             </div>
 
+            <div className="px-6 pt-5 sm:px-8"><PwaControls /></div>
             <form action={dispatch} className="px-6 py-6 sm:px-8" noValidate>
               <div className="space-y-5">
                 <div>

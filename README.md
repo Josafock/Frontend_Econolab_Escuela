@@ -1,5 +1,12 @@
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
+## Econolab PWA
+
+Instalación, guía sin conexión, notificaciones y lector de recibos con cámara:
+consulta [INFORME_PWA.md](./INFORME_PWA.md) para conocer los cambios y el guion de demostración.
+Para probar la PWA: `npm run build` y `npm run start -- -p 5173`.
+En teléfonos se requiere HTTPS con certificado confiable.
+
 ## Getting Started
 
 First, run the development server:

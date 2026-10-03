@@ -3,6 +3,8 @@ import BreadcrumbWrapper from "@/components/ui/BreadCrumbWrapper";
 import { ConfirmDialogProvider } from "@/components/ui/ConfirmDialogProvider";
 import ToastNotification from "@/components/ui/ToastNotification";
 import type { User } from "@/schemas";
+import PwaControls from "@/components/pwa/PwaControls";
+import ServiceNotifications from "@/components/pwa/ServiceNotifications";
 
 type ProtectedLayoutShellProps = {
   user: User;
@@ -23,6 +25,9 @@ export default function ProtectedLayoutShell({
 
         <main className="min-w-0 flex-1 px-4 pb-6 pt-20 sm:px-6 sm:pb-8 md:px-8 md:pt-8 xl:px-10">
           <div className="mx-auto flex min-h-[calc(100dvh-5rem)] max-w-[1440px] flex-col">
+            <div className="mb-4">
+              <PwaControls><ServiceNotifications userId={user.id} /></PwaControls>
+            </div>
             <div className="mb-6 rounded-[1.75rem] border border-white/80 bg-white/85 px-4 py-4 shadow-sm shadow-slate-200/60 backdrop-blur sm:px-6">
               <BreadcrumbWrapper />
             </div>

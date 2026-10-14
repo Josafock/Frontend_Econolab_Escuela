@@ -7,7 +7,7 @@ export const metadata: Metadata = {
 };
 
 export default async function HomeLayout({ children }: { children: React.ReactNode }) {
-    const { user } = await verifySession();
+    const { user } = await verifySession("/");
 
     return <ProtectedLayoutShell user={user}>{children}</ProtectedLayoutShell>;
 }

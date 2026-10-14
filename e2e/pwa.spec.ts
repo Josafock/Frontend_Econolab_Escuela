@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
+import { useTestSession } from "./session";
 
 async function prepareOffline(page: Page) {
   await page.goto("/");
@@ -61,8 +62,43 @@ test("las cuatro páginas públicas se precargan y navegan completas sin conexi�
   await page.reload();
   expect(failedResources).toEqual([]);
   await context.setOffline(false);
-  await page.getByRole("link", { name: "Acceso al sistema" }).click();
+  await page.locator("header").getByRole("link", { name: "Iniciar sesión", exact: true }).click();
   await expect(page).toHaveURL(/\/auth\/login$/);
+});
+
+test("la entrada pública muestra login y registro directo y recibe la entrada anterior sin sesión", async ({ page, context }, testInfo) => {
+  await page.goto("/home");
+  await expect(page).toHaveURL(/\/$/);
+  await expect(page.getByRole("heading", { level: 1 })).toContainText("Cerca de ti.");
+  await expect(page.locator("header").getByRole("link", { name: "Iniciar sesión", exact: true })).toBeVisible();
+  await expect(page.locator("header").getByRole("link", { name: "Registrarse", exact: true })).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth)).toBe(false);
+  await page.screenshot({ path: testInfo.outputPath("entrada-publica.png") });
+  await page.locator("header").getByRole("link", { name: "Registrarse", exact: true }).click();
+  await expect(page).toHaveURL(/\/auth\/register$/);
+  await expect(page.getByRole("button", { name: "Crear cuenta", exact: true })).toBeVisible();
+  await page.getByRole("link", { name: "Volver al sitio público", exact: true }).click();
+  await page.locator("header").getByRole("link", { name: "Iniciar sesión", exact: true }).click();
+  await expect(page).toHaveURL(/\/auth\/login$/);
+  // Las otras rutas internas conservan el control de sesión.
+  await page.goto("/estudios");
+  await expect(page).toHaveURL(/\/auth\/login$/);
+  await context.addCookies([{ name: "ECONOLAB_TOKEN", value: "invalid-expired-token", url: "http://localhost:5183", httpOnly: true }]);
+  await page.goto("/home");
+  await expect(page).toHaveURL(/\/$/);
+});
+
+test("con sesión el panel funciona y cerrar sesión vuelve al sitio público", async ({ page, context }) => {
+  await useTestSession(context);
+  await page.goto("/");
+  await expect(page.getByRole("heading", { level: 1 })).toContainText("Cerca de ti.");
+  await page.goto("/home");
+  await expect(page.getByRole("heading", { name: "Panel operativo listo para tu jornada" })).toBeVisible();
+  const mobileMenu = page.getByRole("button", { name: "Abrir menu lateral", exact: true });
+  if (await mobileMenu.isVisible()) await mobileMenu.click();
+  await page.getByRole("button", { name: "Cerrar sesion", exact: true }).click();
+  await expect(page).toHaveURL(/\/$/);
+  expect((await context.cookies()).some((cookie) => cookie.name === "ECONOLAB_TOKEN")).toBe(false);
 });
 
 test("la caché excluye sesión, API, HTML dinámico y resultados", async ({ page }) => {

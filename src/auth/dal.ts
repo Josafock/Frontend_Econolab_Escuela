@@ -5,22 +5,22 @@ import { userSchema } from "../schemas";
 import { cache } from "react";
 import { jwtVerify } from "jose"
 
-export const verifySession = cache(async () => {
+export const verifySession = cache(async (unauthenticatedPath: "/" | "/auth/login" = "/auth/login") => {
   const token = (await cookies()).get("ECONOLAB_TOKEN")?.value;
-  if (!token) redirect("/auth/login");
+  if (!token) redirect(unauthenticatedPath);
 
   try {
     const { payload } = await jwtVerify(token, new TextEncoder().encode(process.env.JWT_SECRET));
     
     const parsed = userSchema.safeParse(payload);
-    if (!parsed.success) redirect("/auth/login");
+    if (!parsed.success) redirect(unauthenticatedPath);
 
     return {
       user: parsed.data,
       token: true,
     };
   } catch {
-    redirect("/auth/login");
+    redirect(unauthenticatedPath);
   }
 })
 

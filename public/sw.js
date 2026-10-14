@@ -1,6 +1,6 @@
 /* Only public, static resources belong in these caches. Never cache patient data. */
 const CACHE_PREFIX = "econolab-pwa-";
-const CACHE_VERSION = "v2-public-pages";
+const CACHE_VERSION = "v3-public-entry";
 const STATIC_CACHE = `${CACHE_PREFIX}${CACHE_VERSION}-static`;
 const ASSET_CACHE = `${CACHE_PREFIX}${CACHE_VERSION}-assets`;
 const PUBLIC_URLS = ["/", "/nosotros", "/servicios-laboratorio", "/contacto"];

@@ -2,6 +2,8 @@
 
 Actualización del 13 de octubre de 2026: sitio público con cuatro páginas offline y QR para estudios.
 
+La entrada principal (`/`) y la apertura de la PWA muestran primero el sitio público. La cabecera de las cuatro páginas tiene accesos separados a **Iniciar sesión** y **Registrarse**, también en teléfono. La entrada anterior `/home`, sin una sesión válida, vuelve al inicio público; con sesión mantiene el panel operativo. Al cerrar sesión se vuelve al sitio público. Tanto el login como el registro permiten regresar al inicio.
+
 ## Objetivo
 
 Convertir el sistema web de laboratorio en una aplicación web progresiva (PWA) instalable en computadora y teléfono, con contenido estático sin conexión, notificaciones y un sensor con utilidad para el trabajo del laboratorio.
@@ -35,7 +37,7 @@ La navegación usa la red primero; si falla, recupera la misma página pública 
 
 La nueva caché del service worker **no almacena expedientes, respuestas API, sesiones, páginas autenticadas, resultados PDF ni operaciones de escritura**. Los módulos que necesitan el servidor siguen requiriendo conexión. No se implementó sincronización clínica nueva ni se convirtió la base de datos en una base offline; los mecanismos de almacenamiento local que ya existían en el proyecto son independientes de este cambio.
 
-El caché usa la versión `v2-public-pages` y elimina únicamente sus versiones anteriores, incluida la caché de la guía. Si falla la descarga inicial de una página o sus recursos, la instalación nueva no sustituye al worker anterior. Las actualizaciones se ofrecen mediante un botón para que el usuario guarde sus cambios antes de recargar. Al modificar los archivos precargados en una entrega futura, también debe cambiarse `CACHE_VERSION` en `public/sw.js`.
+El caché usa la versión `v3-public-entry` y elimina únicamente sus versiones anteriores, incluida la caché de la guía. Si falla la descarga inicial de una página o sus recursos, la instalación nueva no sustituye al worker anterior. Las actualizaciones se ofrecen mediante un botón para que el usuario guarde sus cambios antes de recargar. Al modificar los archivos precargados en una entrega futura, también debe cambiarse `CACHE_VERSION` en `public/sw.js`.
 
 La página de Contacto utiliza las ubicaciones y teléfonos que ya aparecen en los valores de identidad del laboratorio de `backend/src/common/utils/pdf-branding.util.ts`. No se añadieron horarios ni certificaciones sin datos del proyecto.
 
@@ -67,14 +69,14 @@ En computadora, `localhost` permite probar las APIs seguras. Para probar desde u
 
 1. Abrir `/` con conexión, desplegar las opciones de la aplicación y esperar «Páginas públicas disponibles sin conexión en este dispositivo». Si ya estaba instalada la versión anterior, pulsar «Actualizar aplicación» y esperar la recarga.
 2. Instalar desde el botón o menú del navegador. En iPhone/iPad: Safari → Compartir → Agregar a inicio. Abrir el icono creado.
-3. Desactivar la red o marcar **Offline** en DevTools → Network y recargar `/`. Recorrer Inicio, Nosotros, Servicios y Contacto desde el menú; deben conservar contenido, estilos y logotipo. Abrir `/home` sin conexión debe volver al inicio público. Restaurar la conexión y pulsar «Acceso al sistema» para iniciar sesión.
+3. Desactivar la red o marcar **Offline** en DevTools → Network y recargar `/`. Recorrer Inicio, Nosotros, Servicios y Contacto desde el menú; deben conservar contenido, estilos y logotipo. Abrir `/home` sin conexión debe volver al inicio público. Restaurar la conexión y pulsar «Iniciar sesión» o «Registrarse» desde la cabecera.
 4. Con sesión, activar las notificaciones y enviar el aviso de prueba. Para los avisos de operación, finalizar un resultado de prueba o revisar servicios con entregas próximas/vencidas. Evitar modificar registros reales sólo para la demostración.
 5. En Estudios, abrir Acciones → Ver QR o el botón Ver QR del detalle y descargar la etiqueta. En otro dispositivo o con la etiqueta impresa, abrir Estudios → Escanear QR, activar la cámara y leerla. Debe abrir el mismo estudio. El lector de recibos sigue disponible en Servicios; rechazar el permiso conserva la alternativa manual.
 6. En DevTools → Application, revisar **Manifest**, **Service Workers** y **Cache Storage**.
 
 ## Validación
 
-Se verificaron el build de producción, TypeScript y ESLint de los archivos modificados. Pasaron 41 pruebas unitarias y los 18 escenarios de navegador en tamaños de computadora y teléfono. Se comprueban las cuatro páginas offline con recursos completos, la privacidad del caché, las notificaciones, los permisos de cámara y la lectura del QR generado hasta abrir el estudio correcto. Para reproducirlas (Node.js 22.18 o posterior):
+Se verificaron el build de producción, TypeScript y ESLint de los archivos modificados. Pasaron 41 pruebas unitarias y los 22 escenarios de navegador en tamaños de computadora y teléfono. Se comprueban la entrada pública, los enlaces de login/registro, la apertura de `/home` con y sin sesión, el cierre de sesión, las cuatro páginas offline con recursos completos, la privacidad del caché, las notificaciones, los permisos de cámara y la lectura del QR generado hasta abrir el estudio correcto. Para reproducirlas (Node.js 22.18 o posterior):
 
 ```powershell
 npm run build

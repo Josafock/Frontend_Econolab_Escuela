@@ -127,7 +127,7 @@ function ReceptionistHome() {
 }
 
 export default async function Dashboard() {
-  const { user } = await verifySession();
+  const { user } = await verifySession('/');
 
   if (user.rol !== 'admin') {
     return <ReceptionistHome />;

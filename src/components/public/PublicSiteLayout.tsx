@@ -1,5 +1,5 @@
 import Image from "next/image";
-import { ArrowUpRight, FlaskConical, MapPin, Phone } from "lucide-react";
+import { FlaskConical, MapPin, Phone } from "lucide-react";
 import PwaControls from "@/components/pwa/PwaControls";
 
 export const publicPages = [
@@ -22,12 +22,15 @@ export default function PublicSiteLayout({ children, current }: { children: Reac
         </div>
       </div>
       <header className="border-b border-slate-200 bg-white">
-        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-5 px-5 py-5 sm:px-6">
-          <a href="/" aria-label="Econolab, inicio"><Image src="/econolab-brand.png" alt="Econolab" width={220} height={70} unoptimized priority className="h-auto w-40 sm:w-48" /></a>
-          <a href="/auth/login" className="inline-flex items-center gap-2 rounded-full bg-red-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-red-700">Acceso al sistema<ArrowUpRight size={16} aria-hidden="true" /></a>
-          <nav aria-label="Navegación pública" className="flex w-full flex-wrap gap-x-6 gap-y-3 border-t border-slate-100 pt-4 text-sm sm:w-auto sm:border-0 sm:pt-0">
+        <div className="mx-auto grid max-w-6xl grid-cols-[1fr_auto] items-center gap-x-5 gap-y-4 px-5 py-5 sm:px-6 lg:grid-cols-[auto_1fr_auto]">
+          <a href="/" aria-label="Econolab, inicio" className="order-1"><Image src="/econolab-brand.png" alt="Econolab" width={220} height={70} unoptimized priority className="h-auto w-28 sm:w-44" /></a>
+          <nav aria-label="Navegación pública" className="order-3 col-span-2 flex flex-wrap gap-x-6 gap-y-3 border-t border-slate-100 pt-4 text-sm lg:order-2 lg:col-span-1 lg:justify-center lg:border-0 lg:pt-0">
             {publicPages.map((page) => <a key={page.href} href={page.href} aria-current={current === page.href ? "page" : undefined} className={`border-b-2 pb-1 transition-colors ${current === page.href ? "border-red-600 font-semibold text-red-700" : "border-transparent text-slate-600 hover:text-red-700"}`}>{page.label}</a>)}
           </nav>
+          <div className="order-2 flex flex-col gap-2 sm:flex-row lg:order-3">
+            <a href="/auth/login" className="rounded-full border border-slate-300 px-3 py-2.5 text-center text-xs font-semibold text-slate-700 hover:border-red-300 hover:text-red-700 sm:px-4 sm:text-sm">Iniciar sesión</a>
+            <a href="/auth/register" className="rounded-full bg-red-600 px-3 py-2.5 text-center text-xs font-semibold text-white hover:bg-red-700 sm:px-4 sm:text-sm">Registrarse</a>
+          </div>
         </div>
       </header>
       <main id="contenido" className="mx-auto max-w-6xl px-5 py-12 sm:px-6 sm:py-16">{children}</main>

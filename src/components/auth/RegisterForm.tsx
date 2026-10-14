@@ -333,6 +333,7 @@ export default function RegisterForm() {
             </form>
           </div>
 
+          <div className="mt-5 text-center"><Link href="/" className="text-sm font-semibold text-red-700 hover:underline">Volver al sitio público</Link></div>
           {/* Nota inferior */}
           <div className="mt-6 text-center text-xs text-gray-600">
             <span>

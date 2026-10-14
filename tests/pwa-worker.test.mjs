@@ -5,8 +5,8 @@ import vm from "node:vm";
 
 const source = await readFile(new URL("../public/sw.js", import.meta.url), "utf8");
 const ORIGIN = "https://econolab.test";
-const STATIC_CACHE = "econolab-pwa-v2-public-pages-static";
-const ASSET_CACHE = "econolab-pwa-v2-public-pages-assets";
+const STATIC_CACHE = "econolab-pwa-v3-public-entry-static";
+const ASSET_CACHE = "econolab-pwa-v3-public-entry-assets";
 const PUBLIC_PAGES = ["/", "/nosotros", "/servicios-laboratorio", "/contacto"];
 const defaultFetcher = async (request) => PUBLIC_PAGES.includes(new URL(request.url).pathname)
   ? new Response("<html><body>Public page</body></html>", { headers: { "content-type": "text/html" } })
@@ -161,6 +161,7 @@ test("activate removes only old Econolab PWA caches and claims clients", async (
   const context = harness();
   context.cacheFor("econolab-pwa-v0-static");
   context.cacheFor("econolab-pwa-v1-static");
+  context.cacheFor("econolab-pwa-v2-public-pages-static");
   context.cacheFor("another-app-cache");
   context.cacheFor("econolab-patient-cache");
   context.cacheFor(STATIC_CACHE);
@@ -168,6 +169,7 @@ test("activate removes only old Econolab PWA caches and claims clients", async (
   await context.dispatch("activate").pending;
   assert.equal(context.stores.has("econolab-pwa-v0-static"), false);
   assert.equal(context.stores.has("econolab-pwa-v1-static"), false);
+  assert.equal(context.stores.has("econolab-pwa-v2-public-pages-static"), false);
   assert.equal(context.stores.has("another-app-cache"), true);
   assert.equal(context.stores.has("econolab-patient-cache"), true);
   assert.equal(context.stores.has(STATIC_CACHE), true);

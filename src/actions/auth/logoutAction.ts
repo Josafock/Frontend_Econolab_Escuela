@@ -6,5 +6,5 @@ import { redirect } from "next/navigation";
 export async function logout() {
     const cookie = await cookies();
     cookie.delete("ECONOLAB_TOKEN");
-    redirect("/auth/login");
+    redirect("/");
 }

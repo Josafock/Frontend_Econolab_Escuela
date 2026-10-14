@@ -11,6 +11,11 @@ createServer((request, response) => {
   if (url.pathname === "/health") return response.end(JSON.stringify({ ok: true }));
   if (request.method !== "GET") { response.statusCode = 405; return response.end(JSON.stringify({ message: "Fixture de solo lectura" })); }
   if (url.pathname === "/api/studies") return response.end(JSON.stringify({ data: studies, meta: { page: 1, limit: 2000, total: studies.length } }));
+  if (url.pathname === "/api/services/73") return response.end(JSON.stringify({
+    id: 73, folio: "QR-DEMO-73", patientId: 1, status: "pending", items: [],
+    branchName: "DEMO", subtotalAmount: 100, courtesyPercent: 0, discountAmount: 0, totalAmount: 100,
+    createdAt: "2026-10-13T12:00:00Z", patient: { id: 1, firstName: "PACIENTE", lastName: "DEMO" },
+  }));
   const match = /^\/api\/studies\/(\d+)(\/details)?$/.exec(url.pathname);
   if (match) {
     const study = studies.find(({ id }) => id === Number(match[1]));

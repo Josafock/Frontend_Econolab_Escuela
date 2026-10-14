@@ -25,7 +25,13 @@ Cada estudio y paquete tiene un QR generado a partir de su identificador estable
 
 En Estudios → Escanear QR, la cámara reconoce el código, consulta el registro mediante la API autenticada y abre su detalle. Si el estudio fue eliminado, el QR no es válido o falla la consulta, se muestra un mensaje y no se abre otro registro. Los enlaces externos se rechazan. El QR conserva su asociación aunque cambie el nombre o la clave del estudio.
 
+Los PDF de resultados también imprimen códigos reales: el documento individual incluye el QR del estudio, y el consolidado imprime un QR junto a cada estudio y un QR del servicio completo al final (`econolab:service:ID`). Los de estudios se leen en Estudios → Escanear QR; el del servicio se lee desde el lector de recibos de Servicios, que admite CODE128 y QR. La generación ya no depende de `LAB_QR_URL`. El texto se imprime debajo del código para no taparlo. Estos códigos sirven para consultar los registros con sesión; no constituyen una firma digital ni una validación pública del documento.
+
+Para ver la corrección se debe utilizar la versión actualizada del backend y generar nuevamente el PDF: una descarga anterior conserva su contenido original. La implementación está en `backend/src/results/results.service.ts` y `backend/src/common/utils/pwa-qr.util.ts`.
+
 El sistema también conserva el lector de recibos: utiliza el código CODE128 con el folio del servicio para localizar una orden. Ambos lectores respetan la sesión y los permisos existentes.
+
+La corrección de PDF se validó generando tres documentos con datos ficticios (individual, consolidado continuo y separado por estudio), renderizando sus siete QR y decodificando los siete con el lector real. Pasaron cuatro pruebas de PDF en el backend, 44 pruebas unitarias del frontend y diez pruebas de cámara/QR en navegador con tamaños de computadora y teléfono.
 
 La lectura se realiza en el dispositivo; no se envían imágenes al servidor. La cámara se solicita al pulsar el botón, se puede detener y se libera al cerrar el lector o abandonar la pantalla. Si no hay cámara o se rechaza el permiso, se puede escribir el folio. Las etiquetas de muestras tienen códigos compuestos diferentes: el lector identifica recibos por su folio exacto y no intenta deducir la orden a partir de coincidencias parciales.
 

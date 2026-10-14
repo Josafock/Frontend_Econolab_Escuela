@@ -1,16 +1,14 @@
 /* Only public, static resources belong in these caches. Never cache patient data. */
 const CACHE_PREFIX = "econolab-pwa-";
-const CACHE_VERSION = "v1";
+const CACHE_VERSION = "v2-public-pages";
 const STATIC_CACHE = `${CACHE_PREFIX}${CACHE_VERSION}-static`;
 const ASSET_CACHE = `${CACHE_PREFIX}${CACHE_VERSION}-assets`;
-const OFFLINE_URL = "/offline.html";
+const PUBLIC_URLS = ["/", "/nosotros", "/servicios-laboratorio", "/contacto"];
+const PUBLIC_PATHS = new Set(PUBLIC_URLS);
 const NAVIGATION_TIMEOUT_MS = 5000;
 const MAX_RUNTIME_ASSETS = 100;
 const CACHE_BUILD_ASSETS = new URL(self.location.href).searchParams.get("dev") !== "1";
 const STATIC_URLS = [
-  OFFLINE_URL,
-  "/offline.css",
-  "/offline.js",
   "/econolab-brand.png",
   "/icons/icon-192.png",
   "/icons/icon-512.png",
@@ -20,13 +18,58 @@ const STATIC_URLS = [
 ];
 const STATIC_PATHS = new Set(STATIC_URLS);
 
+function publicRequest(path) {
+  return new Request(path, { cache: "reload", credentials: "omit" });
+}
+
+function buildResourcePaths(text, basePath = "/") {
+  // HTML includes its scripts/styles/font preloads; stylesheets may reference more fonts.
+  const paths = new Set(text.match(/\/_next\/static\/[A-Za-z0-9_./%+@~-]+/g) || []);
+  for (const match of text.matchAll(/url\(\s*["']?([^"')\s]+)["']?\s*\)/g)) {
+    try {
+      const resource = new URL(match[1], new URL(basePath, self.location.origin));
+      if (resource.origin === self.location.origin && resource.pathname.startsWith("/_next/static/")) paths.add(resource.pathname);
+    } catch { /* Ignore a malformed or non-network CSS reference. */ }
+  }
+  return [...paths];
+}
+
+async function precachePublicSite() {
+  const cache = await caches.open(STATIC_CACHE);
+  await cache.addAll(STATIC_URLS.map(publicRequest));
+  const resources = new Set();
+  // Only these four public routes are eligible for HTML caching, without cookies.
+  for (const path of PUBLIC_URLS) {
+    const response = await fetch(publicRequest(path));
+    if (!response.ok || response.redirected || !response.headers.get("content-type")?.includes("text/html")) {
+      throw new Error(`Public page unavailable: ${path}`);
+    }
+    const html = await response.clone().text();
+    await cache.put(path, response);
+    if (CACHE_BUILD_ASSETS) buildResourcePaths(html).forEach((resource) => resources.add(resource));
+  }
+  // Fetch dependencies before activation, including routes that have not been visited.
+  const seen = new Set();
+  while (resources.size) {
+    const batch = [...resources].filter((path) => !seen.has(path));
+    resources.clear();
+    await Promise.all(batch.map(async (path) => {
+      seen.add(path);
+      const response = await fetch(publicRequest(path));
+      if (!response.ok) throw new Error(`Public resource unavailable: ${path}`);
+      if (path.endsWith(".css")) {
+        buildResourcePaths(await response.clone().text(), path).forEach((resource) => {
+          if (!seen.has(resource)) resources.add(resource);
+        });
+      }
+      await cache.put(path, response);
+    }));
+  }
+}
+
 self.addEventListener("install", (event) => {
-  // A failed precache leaves the currently active worker in place.
-  event.waitUntil(
-    caches.open(STATIC_CACHE).then((cache) =>
-      cache.addAll(STATIC_URLS.map((url) => new Request(url, { cache: "reload" }))),
-    ),
-  );
+  // If any public page or dependency fails, the previous worker remains active.
+  event.waitUntil(precachePublicSite());
 });
 
 self.addEventListener("activate", (event) => {
@@ -56,22 +99,26 @@ function isPrivateOrNonDocumentRequest(request, url) {
     || url.searchParams.has("_rsc");
 }
 
-async function offlineDocument() {
+async function offlineDocument(request) {
+  const pathname = new URL(request.url).pathname;
+  // Keep private routes out of the public application's router and its HTML cache.
+  if (!PUBLIC_PATHS.has(pathname)) return Response.redirect(new URL("/", self.location.origin).href, 302);
   let offline;
   try {
     const cache = await caches.open(STATIC_CACHE);
-    offline = await cache.match(OFFLINE_URL);
+    offline = await cache.match(pathname);
   } catch {
     // Storage may be disabled or evicted by the browser.
   }
   // An emergency page also works if the browser has evicted Cache Storage.
   return offline || new Response(
-    '<!doctype html><html lang="es"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Econolab sin conexión</title><h1>Econolab sin conexión</h1><p>Conéctate a internet para consultar y guardar información del laboratorio.</p><p><a href="/home">Reintentar conexión</a></p></html>',
+    '<!doctype html><html lang="es"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Econolab</title><h1>Econolab</h1><p>El navegador eliminó la copia local. Conéctate una vez para recuperar las páginas del laboratorio.</p><p><a href="/">Reintentar conexión</a></p></html>',
     { status: 200, headers: { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-store" } },
   );
 }
 
 async function networkDocument(request) {
+  const pathname = new URL(request.url).pathname;
   const controller = new AbortController();
   let timer;
   try {
@@ -85,9 +132,16 @@ async function networkDocument(request) {
       fetch(request, { signal: controller.signal }),
       timeout,
     ]);
-    return response.status >= 500 ? offlineDocument() : response;
+    if (response.status >= 500) return offlineDocument(request);
+    if (PUBLIC_PATHS.has(pathname) && response.ok && !response.redirected && response.headers.get("content-type")?.includes("text/html")) {
+      try {
+        const cache = await caches.open(STATIC_CACHE);
+        await cache.put(pathname, response.clone());
+      } catch { /* A storage failure must not break a successful public navigation. */ }
+    }
+    return response;
   } catch {
-    return offlineDocument();
+    return offlineDocument(request);
   } finally {
     clearTimeout(timer);
   }
@@ -107,6 +161,8 @@ async function staticResource(request) {
 async function buildAsset(request) {
   let cache;
   try {
+    const precached = await (await caches.open(STATIC_CACHE)).match(new URL(request.url).pathname);
+    if (precached) return precached;
     cache = await caches.open(ASSET_CACHE);
     const cached = await cache.match(request);
     if (cached) return cached;
@@ -137,7 +193,7 @@ self.addEventListener("fetch", (event) => {
   if (STATIC_PATHS.has(url.pathname)) {
     event.respondWith(staticResource(request));
   } else if (request.mode === "navigate") {
-    // Authenticated HTML is always requested from the server and is never cached.
+    // Only allowlisted public HTML is cached; authenticated HTML always uses the network.
     event.respondWith(networkDocument(request));
   } else if (CACHE_BUILD_ASSETS && url.pathname.startsWith("/_next/static/")) {
     event.respondWith(buildAsset(request));

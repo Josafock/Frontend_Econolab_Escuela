@@ -186,6 +186,7 @@ export default function LoginForm() {
             </form>
           </div>
 
+          <div className="mt-5 text-center"><Link href="/" className="text-sm font-semibold text-red-700 hover:underline">Volver al sitio público</Link></div>
           <div className="mt-6 text-center text-xs text-gray-600">
             Al iniciar sesión, aceptas nuestros{' '}
             <Link href="/terms" className="text-red-600 hover:underline hover:text-red-700 transition-colors">

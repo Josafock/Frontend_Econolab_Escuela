@@ -1,5 +1,7 @@
 # Informe básico: Econolab como PWA
 
+Actualización del 13 de octubre de 2026: sitio público con cuatro páginas offline y QR para estudios.
+
 ## Objetivo
 
 Convertir el sistema web de laboratorio en una aplicación web progresiva (PWA) instalable en computadora y teléfono, con contenido estático sin conexión, notificaciones y un sensor con utilidad para el trabajo del laboratorio.
@@ -10,23 +12,32 @@ Convertir el sistema web de laboratorio en una aplicación web progresiva (PWA) 
 | --- | --- | --- |
 | Instalación | Manifest con nombre, iconos de 192 y 512 píxeles, icono adaptable, colores, accesos directos y visualización `standalone`. Botón de instalación cuando el navegador lo permite e instrucciones para iPhone/iPad. | Abrir Econolab desde el escritorio o pantalla de inicio en su propia ventana. |
 | Manifest y service worker | `src/app/manifest.ts` produce `/manifest.webmanifest`; `public/sw.js` se registra desde el layout principal. | Define la identidad de la aplicación, administra recursos locales y recibe clics en notificaciones. |
-| Contenido offline | Guía de recepción, registro de servicios, captura de resultados, lector de recibos e instalación, junto con sus estilos, JavaScript, logotipo e iconos. También se conservan recursos estáticos de Next.js que se hayan solicitado bajo control del worker. | Consultar instrucciones durante una interrupción de internet, incluso al volver a abrir la aplicación. |
+| Parte pública y contenido offline | Inicio (`/`), Nosotros (`/nosotros`), Servicios (`/servicios-laboratorio`) y Contacto (`/contacto`), con sus estilos, scripts, fuentes, logotipo e iconos. | Conocer el laboratorio y consultar información de contacto, incluso sin internet. |
 | Notificaciones | Activación voluntaria, aviso de prueba, confirmación de resultado final guardado y recordatorios de entregas próximas o vencidas. | Ayudar al personal a dar seguimiento a entregas y al cierre de resultados. |
-| Sensor: cámara | Lector de códigos de barras CODE128 de los recibos existentes, integrado en Servicios, con búsqueda exacta del folio. | Localizar la orden desde el recibo y reducir errores de captura manual. |
+| Sensor: cámara | Lector de QR de estudios en Estudios, además del lector de recibos CODE128 en Servicios. | Identificar un estudio o servicio sin escribir a mano su referencia. |
+| QR de estudios | Opción «Ver QR» en el catálogo y detalle, con descarga de una imagen PNG por estudio o paquete. | Preparar etiquetas y abrir el registro correcto al escanearlas. |
 
 ## Justificación del sensor
 
-El sistema ya genera recibos con un código de barras que contiene el folio del servicio. La cámara del teléfono permite leer ese código y encontrar la orden correspondiente. La función se integra con la consulta de servicios y respeta la sesión y permisos existentes.
+Cada estudio y paquete tiene un QR generado a partir de su identificador estable con el formato `econolab:study:ID`. Está disponible en Estudios → Acciones → Ver QR y en el detalle del registro. Se puede descargar como PNG para imprimirlo o usarlo desde otro dispositivo; también funciona para los registros existentes, sin modificar la base de datos.
+
+En Estudios → Escanear QR, la cámara reconoce el código, consulta el registro mediante la API autenticada y abre su detalle. Si el estudio fue eliminado, el QR no es válido o falla la consulta, se muestra un mensaje y no se abre otro registro. Los enlaces externos se rechazan. El QR conserva su asociación aunque cambie el nombre o la clave del estudio.
+
+El sistema también conserva el lector de recibos: utiliza el código CODE128 con el folio del servicio para localizar una orden. Ambos lectores respetan la sesión y los permisos existentes.
 
 La lectura se realiza en el dispositivo; no se envían imágenes al servidor. La cámara se solicita al pulsar el botón, se puede detener y se libera al cerrar el lector o abandonar la pantalla. Si no hay cámara o se rechaza el permiso, se puede escribir el folio. Las etiquetas de muestras tienen códigos compuestos diferentes: el lector identifica recibos por su folio exacto y no intenta deducir la orden a partir de coincidencias parciales.
 
 ## Alcance del modo offline
 
-Después de la primera visita con conexión, el service worker descarga la guía y sus recursos. Si una navegación falla por falta de red o el servidor no responde, se muestra esa guía. Incluye navegación interna y un botón para volver al sistema cuando haya conexión.
+Después de la primera visita con conexión, el service worker descarga las cuatro páginas públicas y todas sus dependencias estáticas. Se precargan también las páginas que el usuario todavía no abrió, para que toda la navegación pública funcione desde la primera desconexión.
+
+La navegación usa la red primero; si falla, recupera la misma página pública desde la caché. Al abrir una sección interna sin conexión, vuelve al inicio público. Los enlaces públicos hacen una navegación completa para que no dependan de peticiones RSC de Next.js. La pantalla de guía anterior fue retirada; `/offline.html` redirige a `/` para conservar enlaces antiguos.
 
 La nueva caché del service worker **no almacena expedientes, respuestas API, sesiones, páginas autenticadas, resultados PDF ni operaciones de escritura**. Los módulos que necesitan el servidor siguen requiriendo conexión. No se implementó sincronización clínica nueva ni se convirtió la base de datos en una base offline; los mecanismos de almacenamiento local que ya existían en el proyecto son independientes de este cambio.
 
-El caché tiene versión y elimina únicamente sus versiones anteriores. Las actualizaciones se ofrecen mediante un botón para que el usuario guarde sus cambios antes de recargar. Al modificar los archivos precargados en una entrega futura, también debe cambiarse `CACHE_VERSION` en `public/sw.js`.
+El caché usa la versión `v2-public-pages` y elimina únicamente sus versiones anteriores, incluida la caché de la guía. Si falla la descarga inicial de una página o sus recursos, la instalación nueva no sustituye al worker anterior. Las actualizaciones se ofrecen mediante un botón para que el usuario guarde sus cambios antes de recargar. Al modificar los archivos precargados en una entrega futura, también debe cambiarse `CACHE_VERSION` en `public/sw.js`.
+
+La página de Contacto utiliza las ubicaciones y teléfonos que ya aparecen en los valores de identidad del laboratorio de `backend/src/common/utils/pdf-branding.util.ts`. No se añadieron horarios ni certificaciones sin datos del proyecto.
 
 ## Notificaciones y permisos
 
@@ -54,16 +65,16 @@ En computadora, `localhost` permite probar las APIs seguras. Para probar desde u
 
 ### Guion de demostración
 
-1. Abrir Econolab con conexión, desplegar las opciones de la aplicación y esperar «Guía sin conexión disponible en este dispositivo».
+1. Abrir `/` con conexión, desplegar las opciones de la aplicación y esperar «Páginas públicas disponibles sin conexión en este dispositivo». Si ya estaba instalada la versión anterior, pulsar «Actualizar aplicación» y esperar la recarga.
 2. Instalar desde el botón o menú del navegador. En iPhone/iPad: Safari → Compartir → Agregar a inicio. Abrir el icono creado.
-3. Desactivar la red o marcar **Offline** en DevTools → Network y recargar `/home`. Debe aparecer la guía con logotipo, diseño y secciones navegables. Restaurar la conexión y pulsar «Reintentar abrir Econolab».
+3. Desactivar la red o marcar **Offline** en DevTools → Network y recargar `/`. Recorrer Inicio, Nosotros, Servicios y Contacto desde el menú; deben conservar contenido, estilos y logotipo. Abrir `/home` sin conexión debe volver al inicio público. Restaurar la conexión y pulsar «Acceso al sistema» para iniciar sesión.
 4. Con sesión, activar las notificaciones y enviar el aviso de prueba. Para los avisos de operación, finalizar un resultado de prueba o revisar servicios con entregas próximas/vencidas. Evitar modificar registros reales sólo para la demostración.
-5. En Servicios, abrir el lector y permitir la cámara. Escanear el código de un recibo emitido por el sistema; revisar el servicio encontrado y abrir su detalle. Repetir rechazando el permiso para mostrar la alternativa manual.
+5. En Estudios, abrir Acciones → Ver QR o el botón Ver QR del detalle y descargar la etiqueta. En otro dispositivo o con la etiqueta impresa, abrir Estudios → Escanear QR, activar la cámara y leerla. Debe abrir el mismo estudio. El lector de recibos sigue disponible en Servicios; rechazar el permiso conserva la alternativa manual.
 6. En DevTools → Application, revisar **Manifest**, **Service Workers** y **Cache Storage**.
 
 ## Validación
 
-Se verificaron el build de producción, TypeScript y ESLint de los archivos modificados. Las pruebas automatizadas cubren el caché y sus exclusiones, permisos y sesiones de notificaciones, resolución exacta de folios y comportamiento en navegador. Para reproducirlas (Node.js 22.18 o posterior):
+Se verificaron el build de producción, TypeScript y ESLint de los archivos modificados. Pasaron 41 pruebas unitarias y los 18 escenarios de navegador en tamaños de computadora y teléfono. Se comprueban las cuatro páginas offline con recursos completos, la privacidad del caché, las notificaciones, los permisos de cámara y la lectura del QR generado hasta abrir el estudio correcto. Para reproducirlas (Node.js 22.18 o posterior):
 
 ```powershell
 npm run build
@@ -71,16 +82,18 @@ npm run test:pwa
 npm run test:pwa:browser
 ```
 
-Las pruebas de navegador utilizan Chrome y un servidor local aislado en el puerto 5183, con sesión ficticia y sin conexión a la base de datos. Para usar Chromium de Playwright, ejecutar `npx playwright install chromium` y definir `PLAYWRIGHT_CHANNEL=chromium`. Se verifica el envío real al API de notificaciones del worker; la prueba de cámara usa un flujo de video simulado para comprobar permisos y liberación del sensor. La instalación desde el sistema operativo, el recorrido con servicios de una base real y el escaneo óptico en un teléfono físico deben verificarse con el guion anterior.
+Las pruebas de navegador utilizan Chrome y un servidor local aislado en el puerto 5183, con sesión ficticia y una API de lectura con registros de prueba en el puerto 5184, sin conexión a la base de datos. Para usar Chromium de Playwright, ejecutar `npx playwright install chromium` y definir `PLAYWRIGHT_CHANNEL=chromium`. Se verifica el envío real al API de notificaciones del worker. El lector QR utiliza el decoder real sobre un video simulado del PNG generado por la aplicación. La instalación desde el sistema operativo, el recorrido con registros de una base real y el escaneo óptico en un teléfono físico deben verificarse con el guion anterior.
 
 ## Archivos principales
 
 - `src/app/manifest.ts`, `src/app/layout.tsx`, `next.config.ts`: identidad y configuración PWA.
 - `src/components/pwa/PwaProvider.tsx` y `PwaControls.tsx`: registro, instalación, conectividad y actualizaciones.
-- `public/sw.js`, `public/offline.html`, `public/offline.css`, `public/offline.js`: caché y guía sin conexión.
+- `public/sw.js`: precarga de páginas públicas y dependencias, fallback y actualizaciones.
+- `src/app/page.tsx`, `src/app/nosotros/page.tsx`, `src/app/servicios-laboratorio/page.tsx`, `src/app/contacto/page.tsx`, `src/components/public/`: sitio público responsive.
 - `public/icons/` y `scripts/generate-pwa-icons.mjs`: iconos derivados del logotipo existente.
 - `src/components/pwa/ServiceNotifications.tsx` y `src/lib/pwa/notifications.ts`: controles y avisos.
-- `src/components/servicios/ServiceBarcodeScanner.tsx`: cámara y lector de recibos.
+- `src/components/servicios/ServiceBarcodeScanner.tsx`: cámara con lectura de recibos o QR de estudios según la sección.
+- `src/components/estudios/StudyQrModal.tsx`, `StudyQrButton.tsx`, `src/lib/studies/study-qr.ts`: generación, descarga y resolución de QR.
 - `tests/` y `e2e/`: comprobaciones del worker y pruebas en navegador.
 
 ## Referencias técnicas

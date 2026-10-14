@@ -2,7 +2,7 @@ import { SignJWT } from "jose";
 import type { BrowserContext } from "@playwright/test";
 
 // Sólo funciona contra el servidor aislado de playwright.config.ts.
-// Ese servidor usa una API inexistente: estas pruebas nunca escriben en la BD.
+// Ese servidor usa una API ficticia de lectura: estas pruebas nunca escriben en la BD.
 export async function useTestSession(context: BrowserContext) {
   const token = await new SignJWT({ sub: "pwa-test", nombre: "Prueba PWA", email: "pwa@example.test", rol: "recepcionista" })
     .setProtectedHeader({ alg: "HS256" })

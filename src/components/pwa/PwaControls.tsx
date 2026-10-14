@@ -6,8 +6,8 @@ import { usePwa } from "./PwaProvider";
 export default function PwaControls({ children }: { children?: React.ReactNode }) {
   const pwa = usePwa();
   const stateText = {
-    checking: "Preparando la guía sin conexión…",
-    ready: "Guía sin conexión disponible en este dispositivo.",
+    checking: "Preparando las páginas públicas sin conexión…",
+    ready: "Páginas públicas disponibles sin conexión en este dispositivo.",
     disabled: "La instalación y el modo offline se habilitan en la versión de producción.",
     insecure: "Abre Econolab mediante HTTPS para instalarla y habilitar las funciones del teléfono.",
     unsupported: "Este navegador no admite el modo offline. Usa un navegador compatible actualizado.",
@@ -34,8 +34,10 @@ export default function PwaControls({ children }: { children?: React.ReactNode }
           </div>
         )}
         {pwa.message && <p role="status" className="text-xs">{pwa.message}</p>}
-        <p className="text-xs leading-5">La guía de uso, la identidad visual y los recursos estáticos quedan disponibles sin internet después de la primera visita con conexión. Los servicios y resultados se consultan con conexión.</p>
-        <a href="/offline.html" className="inline-block font-semibold text-red-700 underline underline-offset-4">Consultar guía sin conexión</a>
+        <p className="text-xs leading-5">Inicio, Nosotros, Servicios y Contacto quedan disponibles sin internet después de la primera visita con conexión. El catálogo interno y los resultados se consultan con conexión.</p>
+        {/* Navegación completa: evita depender de RSC al abrir el sitio sin red. */}
+        {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
+        <a href="/" className="inline-block font-semibold text-red-700 underline underline-offset-4">Visitar el sitio público</a>
         {pwa.updateAvailable && (
           <div className="rounded-xl bg-red-50 p-3">
             <p className="mb-2 text-xs">Hay una nueva versión. Guarda tus cambios antes de actualizar; la página se recargará.</p>

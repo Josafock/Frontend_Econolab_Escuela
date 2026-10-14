@@ -170,9 +170,10 @@ export default function PwaProvider({ children }: { children: React.ReactNode })
     <PwaContext.Provider value={{ installed, canInstall: Boolean(prompt), installing, online, workerState, updateAvailable: Boolean(waitingWorker), install, update, message }}>
       {!online && (
         <div role="status" className="sticky top-0 z-[80] flex flex-wrap items-center justify-center gap-x-3 gap-y-1 border-b border-amber-300 bg-amber-50 px-4 py-3 text-center text-sm text-amber-950">
-          <span>Sin conexión. Para consultar o guardar datos necesitas volver a conectarte.</span>
-          {/* Navegación completa: la guía funciona sin React ni servidor. */}
-          <a href="/offline.html" className="font-semibold underline underline-offset-4">Abrir guía sin conexión</a>
+          <span>Sin conexión. Puedes recorrer las páginas públicas; el sistema necesita conexión.</span>
+          {/* Navegación completa para usar los documentos públicos almacenados. */}
+          {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
+          <a href="/" className="font-semibold underline underline-offset-4">Ir al inicio público</a>
         </div>
       )}
       {children}

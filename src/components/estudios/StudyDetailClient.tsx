@@ -65,6 +65,7 @@ import {
   type StudyDetailExcelRow,
 } from "@/components/estudios/studyDetailFormUtils";
 import EntityActionsMenu from "@/components/ui/EntityActionsMenu";
+import StudyQrButton from "@/components/estudios/StudyQrButton";
 import type { ExcelColumn } from "@/helpers/excel";
 import { matchesNormalizedSearch } from "@/helpers/search";
 import {
@@ -957,6 +958,7 @@ export default function StudyDetailClient({
 
         {study ? (
           <div className="flex flex-wrap items-center gap-3">
+            <StudyQrButton study={study} />
             <span
               className={`inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold ${getStudyStatusColor(study.status)}`}
             >

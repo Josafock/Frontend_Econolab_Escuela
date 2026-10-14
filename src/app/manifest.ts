@@ -7,7 +7,7 @@ export default function manifest(): MetadataRoute.Manifest {
     short_name: "Econolab",
     description: "Gestión de servicios, estudios y resultados del laboratorio Econolab.",
     lang: "es-MX",
-    start_url: "/home",
+    start_url: "/",
     scope: "/",
     display: "standalone",
     background_color: "#f1f5f9",
@@ -20,7 +20,8 @@ export default function manifest(): MetadataRoute.Manifest {
     ],
     shortcuts: [
       { name: "Servicios", url: "/servicios", description: "Consultar servicios y escanear recibos" },
-      { name: "Guía sin conexión", url: "/offline.html", description: "Consultar la guía de uso del laboratorio" },
+      { name: "Estudios", url: "/estudios", description: "Consultar estudios y escanear sus códigos QR" },
+      { name: "Contacto", url: "/contacto", description: "Consultar ubicaciones y teléfonos del laboratorio" },
     ],
   };
 }

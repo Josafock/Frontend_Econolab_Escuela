@@ -14,14 +14,18 @@ export default defineConfig({
     { name: "desktop", use: { ...devices["Desktop Chrome"] } },
     { name: "mobile", use: { ...devices["Pixel 7"] } },
   ],
-  webServer: {
+  webServer: [{
+    command: "node e2e/fixtures/api-server.mjs",
+    url: "http://127.0.0.1:5184/health",
+    reuseExistingServer: false,
+  }, {
     command: "npm run start -- -p 5183",
     url: "http://localhost:5183/auth/login",
     reuseExistingServer: false,
     timeout: 60_000,
     env: {
       JWT_SECRET: "econolab-pwa-isolated-browser-test-only",
-      API_URL: "http://127.0.0.1:1/api",
+      API_URL: "http://127.0.0.1:5184/api",
     },
-  },
+  }],
 });

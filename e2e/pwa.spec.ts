@@ -1,10 +1,10 @@
 import { expect, test, type Page } from "@playwright/test";
 
 async function prepareOffline(page: Page) {
-  await page.goto("/auth/login");
+  await page.goto("/");
   await page.waitForFunction(() => Boolean(navigator.serviceWorker?.controller));
   await page.locator("summary").filter({ hasText: "Instalar Econolab" }).click();
-  await expect(page.getByText("Guía sin conexión disponible en este dispositivo.")).toBeVisible();
+  await expect(page.getByText("Páginas públicas disponibles sin conexión en este dispositivo.")).toBeVisible();
 }
 
 test("manifest, iconos y metadatos permiten instalar la aplicación", async ({ page, request }) => {
@@ -14,7 +14,7 @@ test("manifest, iconos y metadatos permiten instalar la aplicación", async ({ p
   const response = await request.get("/manifest.webmanifest");
   expect(response.ok()).toBeTruthy();
   const manifest = await response.json();
-  expect(manifest).toMatchObject({ id: "/", scope: "/", start_url: "/home", display: "standalone", lang: "es-MX" });
+  expect(manifest).toMatchObject({ id: "/", scope: "/", start_url: "/", display: "standalone", lang: "es-MX" });
   expect(manifest.icons.map((icon: { sizes: string }) => icon.sizes)).toContain("192x192");
   expect(manifest.icons.map((icon: { sizes: string }) => icon.sizes)).toContain("512x512");
   for (const icon of manifest.icons) {
@@ -31,26 +31,37 @@ test("manifest, iconos y metadatos permiten instalar la aplicación", async ({ p
   expect(worker.headers()["service-worker-allowed"]).toBe("/");
 });
 
-test("el arranque offline y la navegación conservan la guía y su diseño", async ({ page, context }, testInfo) => {
+test("las cuatro páginas públicas se precargan y navegan completas sin conexión", async ({ page, context }, testInfo) => {
   await prepareOffline(page);
+  const failedResources: string[] = [];
+  page.on("requestfailed", (request) => { if (new URL(request.url()).pathname.startsWith("/_next/static/")) failedResources.push(request.url()); });
   await context.setOffline(true);
-  await page.goto("/home");
-  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Tu guía del laboratorio, siempre a mano.");
-  await expect(page.locator("#connection-status")).toContainText(/sin conexión/i);
-  await page.getByRole("link", { name: "Capturar resultados", exact: true }).click();
-  await expect(page).toHaveURL(/#resultados$/);
-  expect(await page.locator(".card").first().evaluate((element) => getComputedStyle(element).borderRadius)).not.toBe("0px");
-  expect(await page.locator(".brand img").evaluate((element) => (element as HTMLImageElement).naturalWidth)).toBeGreaterThan(0);
+  await page.reload();
+  await expect(page.getByRole("heading", { level: 1 })).toContainText("Cerca de ti.");
+  for (const [label, path, heading] of [
+    ["Nosotros", "/nosotros", "El laboratorio detrás de cada estudio."],
+    ["Servicios", "/servicios-laboratorio", "Información para preparar tu visita."],
+    ["Contacto", "/contacto", "Ponte en contacto con Econolab."],
+    ["Inicio", "/", "Cerca de ti."],
+  ]) {
+    await page.getByRole("navigation", { name: "Navegación pública" }).getByRole("link", { name: label, exact: true }).click();
+    await expect(page).toHaveURL(new RegExp(`${path}$`));
+    await expect(page.getByRole("heading", { level: 1 })).toContainText(heading);
+    await expect(page.getByText("Sin conexión. Puedes recorrer las páginas públicas; el sistema necesita conexión.")).toBeVisible();
+  }
+  expect(await page.locator("header img").evaluate((element) => (element as HTMLImageElement).naturalWidth)).toBeGreaterThan(0);
+  expect(await page.locator("header").evaluate((element) => getComputedStyle(element).backgroundColor)).toBe("rgb(255, 255, 255)");
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth);
   expect(overflow).toBe(false);
-  await page.screenshot({ path: testInfo.outputPath("guia-offline.png"), fullPage: true });
-  // Una ruta nunca visitada también recibe la guía, sin recuperar HTML clínico.
+  await page.screenshot({ path: testInfo.outputPath("inicio-publico-offline.png"), fullPage: true });
+  // Sin red, las rutas privadas vuelven al sitio público y no muestran datos clínicos.
   await page.goto("/servicios/detalle?id=123");
-  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Tu guía del laboratorio, siempre a mano.");
+  await expect(page).toHaveURL(/\/$/);
+  await expect(page.getByRole("heading", { level: 1 })).toContainText("Cerca de ti.");
   await page.reload();
-  await expect(page.locator("#services-title")).toBeVisible();
+  expect(failedResources).toEqual([]);
   await context.setOffline(false);
-  await page.getByRole("link", { name: "Reintentar abrir Econolab" }).click();
+  await page.getByRole("link", { name: "Acceso al sistema" }).click();
   await expect(page).toHaveURL(/\/auth\/login$/);
 });
 
@@ -64,9 +75,9 @@ test("la caché excluye sesión, API, HTML dinámico y resultados", async ({ pag
     const names = (await caches.keys()).filter((name) => name.startsWith("econolab-"));
     return (await Promise.all(names.map(async (name) => (await (await caches.open(name)).keys()).map((request) => new URL(request.url).pathname)))).flat();
   });
-  expect(cached).toContain("/offline.html");
-  expect(cached).toContain("/offline.css");
-  expect(cached.some((path) => path.startsWith("/api/") || path.startsWith("/auth/") || path.startsWith("/servicios"))).toBe(false);
+  for (const path of ["/", "/nosotros", "/servicios-laboratorio", "/contacto"]) expect(cached).toContain(path);
+  expect(cached).not.toContain("/offline.html");
+  expect(cached.some((path) => path.startsWith("/api/") || path.startsWith("/auth/") || path === "/servicios" || path.startsWith("/servicios/"))).toBe(false);
 });
 
 test("el botón de instalación usa el diálogo del navegador cuando está disponible", async ({ page }) => {

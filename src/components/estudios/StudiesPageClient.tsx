@@ -1,7 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   BadgeCheck,
   Eye,
@@ -12,6 +12,7 @@ import {
   Microscope,
   PencilLine,
   Plus,
+  QrCode,
   Search,
   ShieldX,
   Trash2,
@@ -60,6 +61,8 @@ import { invalidateServicesCatalogsCache } from "@/lib/services/serviceCatalogCa
 const AddStudyModal = dynamic(
   () => import("@/components/estudios/AddStudyModal"),
 );
+const StudyQrModal = dynamic(() => import("./StudyQrModal"));
+const StudyQrScanner = dynamic(() => import("@/components/servicios/ServiceBarcodeScanner"));
 const CatalogExcelManager = dynamic(
   () => import("@/components/ui/CatalogExcelManager"),
 ) as typeof import("@/components/ui/CatalogExcelManager").default;
@@ -154,6 +157,9 @@ export default function StudiesPageClient() {
   });
   const [showFilters, setShowFilters] = useState(false);
   const [openAddModal, setOpenAddModal] = useState(false);
+  const [qrTarget, setQrTarget] = useState<Study | null>(null);
+  const [scannerOpen, setScannerOpen] = useState(false);
+  const closeScanner = useCallback(() => setScannerOpen(false), []);
   const [createType, setCreateType] = useState<"study" | "package">("study");
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
@@ -373,7 +379,8 @@ export default function StudiesPageClient() {
           </p>
         </div>
 
-        <div className="flex flex-col gap-3 sm:flex-row">
+        <div className="flex flex-col flex-wrap gap-3 sm:flex-row">
+          <button type="button" onClick={() => setScannerOpen(true)} className="inline-flex items-center justify-center gap-2 rounded-2xl border border-red-200 bg-red-50 px-5 py-3 text-sm font-semibold text-red-700 hover:bg-red-100"><QrCode size={20} />Escanear QR</button>
           <CatalogExcelModal
             title="Importación y exportación de estudios"
             subtitle="Gestiona cargas masivas y descargas del catálogo desde una ventana separada para mantener esta vista enfocada en la operación diaria."
@@ -726,6 +733,7 @@ export default function StudiesPageClient() {
                     <EntityActionsMenu
                       buttonLabel="Acciones"
                       items={[
+                        { label: "Ver QR", onClick: () => setQrTarget(study), icon: <QrCode size={16} />, hint: "Descargar etiqueta" },
                         {
                           label: "Ver detalle",
                           href: buildStudyDetailHref(study.id, { hash: "resumen-estudio" }),
@@ -857,6 +865,7 @@ export default function StudiesPageClient() {
                   <EntityActionsMenu
                     buttonLabel="Acciones"
                     items={[
+                      { label: "Ver QR", onClick: () => setQrTarget(study), icon: <QrCode size={16} />, hint: "Descargar etiqueta" },
                       {
                         label: "Ver detalle",
                         href: buildStudyDetailHref(study.id, { hash: "resumen-estudio" }),
@@ -931,6 +940,8 @@ export default function StudiesPageClient() {
         </>
       )}
 
+      {qrTarget && <StudyQrModal study={qrTarget} onClose={() => setQrTarget(null)} />}
+      {scannerOpen && <StudyQrScanner mode="study" onClose={closeScanner} />}
       {openAddModal ? (
         <AddStudyModal
           setOpen={setOpenAddModal}

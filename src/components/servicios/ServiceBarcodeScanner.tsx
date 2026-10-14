@@ -6,8 +6,10 @@ import { Camera, CameraOff, Loader2, Search, X } from "lucide-react";
 import type { IScannerControls } from "@zxing/browser";
 import AppModal from "@/components/ui/AppModal";
 import { getServices } from "@/features/services/api/services";
-import { buildServiceDetailHref } from "@/lib/routes/detail-routes";
+import { buildServiceDetailHref, buildStudyDetailHref } from "@/lib/routes/detail-routes";
 import { resolveReceiptService } from "@/lib/services/service-barcode";
+import { getStudyById } from "@/features/studies/api/studies";
+import { resolveStudyQr } from "@/lib/studies/study-qr";
 
 function cameraErrorMessage(error: unknown) {
   const name = error instanceof Error ? error.name : "";
@@ -23,13 +25,14 @@ function cameraErrorMessage(error: unknown) {
   return "No se pudo iniciar el lector. Revisa la conexión, vuelve a intentarlo o escribe el folio.";
 }
 
-export default function ServiceBarcodeScanner({ onClose }: { onClose: () => void }) {
+export default function ServiceBarcodeScanner({ onClose, mode = "receipt" }: { onClose: () => void; mode?: "receipt" | "study" }) {
+  const isStudy = mode === "study";
   const router = useRouter();
   const [folio, setFolio] = useState("");
   const [cameraState, setCameraState] = useState<"idle" | "starting" | "scanning">("idle");
   const [searching, setSearching] = useState(false);
   const [error, setError] = useState("");
-  const [status, setStatus] = useState("Activa la cámara cuando tengas el recibo a la mano.");
+  const [status, setStatus] = useState(isStudy ? "Activa la cámara cuando tengas el QR del estudio a la mano." : "Activa la cámara cuando tengas el recibo a la mano.");
   const dialogRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
@@ -107,28 +110,31 @@ export default function ServiceBarcodeScanner({ onClose }: { onClose: () => void
     setCameraState("idle");
     setError("");
     if (!navigator.onLine) {
-      setError("Conéctate a internet para localizar el servicio de este recibo.");
-      setStatus("El folio está listo para consultar al recuperar la conexión.");
+      setError(isStudy ? "Conéctate a internet para consultar el estudio de este QR." : "Conéctate a internet para localizar el servicio de este recibo.");
+      setStatus("El código está listo para consultar al recuperar la conexión.");
       return;
     }
     const run = ++searchRunRef.current;
     searchingRef.current = true;
     setSearching(true);
-    setStatus("Buscando una coincidencia exacta del folio…");
+    setStatus(isStudy ? "Consultando el estudio identificado por el QR…" : "Buscando una coincidencia exacta del folio…");
     const isCancelled = () => !mountedRef.current || searchRunRef.current !== run;
     try {
-      const result = await resolveReceiptService(value, getServices, isCancelled);
-      if (isCancelled()) return;
-      if (!result.ok) {
-        setError(result.error);
-        setStatus("Puedes corregir el folio o volver a escanear.");
-        return;
+      if (isStudy) {
+        const result = await resolveStudyQr(value, getStudyById, isCancelled);
+        if (isCancelled()) return;
+        if (!result.ok) { setError(result.error); setStatus("Puedes corregir el código o volver a escanear."); return; }
+        router.push(buildStudyDetailHref(result.studyId, { hash: "resumen-estudio" }));
+      } else {
+        const result = await resolveReceiptService(value, getServices, isCancelled);
+        if (isCancelled()) return;
+        if (!result.ok) { setError(result.error); setStatus("Puedes corregir el folio o volver a escanear."); return; }
+        router.push(buildServiceDetailHref(result.serviceId, { hash: "resumen-operativo" }));
       }
-      router.push(buildServiceDetailHref(result.serviceId, { hash: "resumen-operativo" }));
       closeScanner();
     } catch {
       if (!isCancelled()) {
-        setError("No se pudo consultar el servicio. Revisa la conexión e intenta de nuevo.");
+        setError("No se pudo consultar el registro. Revisa la conexión e intenta de nuevo.");
         setStatus("El folio leído se conserva en el campo de búsqueda.");
       }
     } finally {
@@ -175,7 +181,7 @@ export default function ServiceBarcodeScanner({ onClose }: { onClose: () => void
         setError("Se interrumpió el acceso a la cámara. Actívala de nuevo o escribe el folio.");
       }, { once: true }));
       const reader = new BrowserMultiFormatReader(
-        new Map([[DecodeHintType.POSSIBLE_FORMATS, [BarcodeFormat.CODE_128]]]),
+        new Map([[DecodeHintType.POSSIBLE_FORMATS, [isStudy ? BarcodeFormat.QR_CODE : BarcodeFormat.CODE_128]]]),
         { delayBetweenScanAttempts: 150, delayBetweenScanSuccess: 1000 },
       );
       let decoded = false;
@@ -207,7 +213,7 @@ export default function ServiceBarcodeScanner({ onClose }: { onClose: () => void
       }
       controlsRef.current = controls;
       setCameraState("scanning");
-      setStatus("Acerca el código de barras del recibo. Mantén el teléfono quieto y con buena luz.");
+      setStatus(isStudy ? "Acerca el QR del estudio. Mantén el teléfono quieto y con buena luz." : "Acerca el código de barras del recibo. Mantén el teléfono quieto y con buena luz.");
     } catch (cameraError) {
       if (isCancelled()) return;
       stopCamera();
@@ -227,10 +233,10 @@ export default function ServiceBarcodeScanner({ onClose }: { onClose: () => void
       <div ref={dialogRef} role="dialog" aria-modal="true" aria-labelledby="receipt-scanner-title" aria-describedby="receipt-scanner-description" className="flex max-h-full w-full max-w-xl flex-col overflow-hidden rounded-3xl border border-gray-200 bg-white shadow-2xl">
         <div className="flex items-start justify-between gap-3 border-b border-gray-200 p-4 sm:p-6">
           <div>
-            <h2 id="receipt-scanner-title" className="text-xl font-bold text-gray-900">Escanear recibo</h2>
-            <p id="receipt-scanner-description" className="mt-2 text-sm text-gray-600">Usa la cámara para abrir el servicio del recibo y evitar errores al teclear su folio.</p>
+            <h2 id="receipt-scanner-title" className="text-xl font-bold text-gray-900">{isStudy ? "Escanear QR de estudio" : "Escanear recibo"}</h2>
+            <p id="receipt-scanner-description" className="mt-2 text-sm text-gray-600">{isStudy ? "Usa la cámara para identificar y abrir un estudio del catálogo." : "Usa la cámara para abrir el servicio del recibo y evitar errores al teclear su folio."}</p>
           </div>
-          <button ref={closeRef} type="button" onClick={closeScanner} aria-label="Cerrar lector de recibos" className="shrink-0 rounded-xl p-2 text-gray-600 hover:bg-gray-100 focus-visible:outline-2 focus-visible:outline-red-600">
+          <button ref={closeRef} type="button" onClick={closeScanner} aria-label={isStudy ? "Cerrar lector QR" : "Cerrar lector de recibos"} className="shrink-0 rounded-xl p-2 text-gray-600 hover:bg-gray-100 focus-visible:outline-2 focus-visible:outline-red-600">
             <X size={22} />
           </button>
         </div>
@@ -251,12 +257,12 @@ export default function ServiceBarcodeScanner({ onClose }: { onClose: () => void
               {cameraState === "starting" ? <Loader2 size={18} className="animate-spin" /> : <CameraOff size={18} />} Detener cámara
             </button>
           )}
-          <p className="text-xs leading-relaxed text-gray-500">Escanea el código de barras del recibo de Econolab. Las etiquetas de muestras no son compatibles. Las imágenes se procesan en este dispositivo y no se guardan ni se envían. La consulta del servicio requiere conexión y sesión iniciada.</p>
+          <p className="text-xs leading-relaxed text-gray-500">{isStudy ? "Escanea el QR generado desde el catálogo de Estudios de Econolab." : "Escanea el código de barras del recibo de Econolab. Las etiquetas de muestras no son compatibles."} Las imágenes se procesan en este dispositivo y no se guardan ni se envían. La consulta requiere conexión y sesión iniciada.</p>
           <form onSubmit={handleSubmit} className="space-y-3 border-t border-gray-200 pt-4">
-            <label htmlFor="receipt-folio" className="block text-sm font-semibold text-gray-900">También puedes escribir el folio</label>
-            <input id="receipt-folio" value={folio} onChange={(event) => setFolio(event.target.value)} disabled={searching} maxLength={50} autoComplete="off" autoCapitalize="characters" spellCheck={false} placeholder="Folio completo del recibo" className="w-full rounded-xl border border-gray-300 px-4 py-3 text-base text-gray-900 outline-none focus:border-red-500 focus:ring-2 focus:ring-red-500/20 disabled:opacity-50" />
+            <label htmlFor="receipt-folio" className="block text-sm font-semibold text-gray-900">{isStudy ? "También puedes pegar el contenido del QR" : "También puedes escribir el folio"}</label>
+            <input id="receipt-folio" value={folio} onChange={(event) => setFolio(event.target.value)} disabled={searching} maxLength={80} autoComplete="off" autoCapitalize={isStudy ? "none" : "characters"} spellCheck={false} placeholder={isStudy ? "econolab:study:123" : "Folio completo del recibo"} className="w-full rounded-xl border border-gray-300 px-4 py-3 text-base text-gray-900 outline-none focus:border-red-500 focus:ring-2 focus:ring-red-500/20 disabled:opacity-50" />
             <button type="submit" disabled={searching || !folio.trim()} className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-gray-300 px-4 py-3 text-sm font-semibold text-gray-700 hover:bg-gray-50 disabled:opacity-50">
-              {searching ? <Loader2 size={18} className="animate-spin" /> : <Search size={18} />} {searching ? "Buscando servicio…" : "Abrir servicio"}
+              {searching ? <Loader2 size={18} className="animate-spin" /> : <Search size={18} />} {searching ? "Buscando…" : isStudy ? "Abrir estudio" : "Abrir servicio"}
             </button>
           </form>
         </div>
